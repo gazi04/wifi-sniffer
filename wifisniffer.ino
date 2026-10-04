@@ -4,10 +4,22 @@ extern "C" {
   #include "user_interface.h"
 }
 
-volatile uint32_t frameCount = 0;
+volatile uint32_t len12Count = 0;
+volatile uint32_t len128Count = 0;
+volatile uint32_t otherLenCount = 0;
+
+const uint8_t CHANNEL = 1;
 
 void packetSnifferCallback(uint8_t *buf, uint16_t len) {
-  frameCount++;
+  if (len == 12) {
+    len12Count++;
+  }
+  else if (len == 128) {
+    len128Count++;
+  }
+  else {
+    otherLenCount++;
+  }
 }
 
 void setup() {
@@ -16,9 +28,8 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
 
-  wifi_set_opmode(STATION_MODE);
   wifi_promiscuous_enable(0);
-  wifi_set_channel(1);
+  wifi_set_channel(CHANNEL);
   wifi_set_promiscuous_rx_cb(packetSnifferCallback);
   wifi_promiscuous_enable(1);
 
@@ -26,30 +37,27 @@ void setup() {
 }
 
 void loop() {
-  uint32_t count = frameCount;
-  frameCount = 0;
-  Serial.print("Sniffed ");
-  Serial.print(count);
-  Serial.println(" frames");
-  // Serial.println("Scanning network ....");
-  // int n = WiFi.scanNetworks();
-  // Serial.print(n);
-  // Serial.println(" networks found");
-  //
-  // for (int i = 0; i < n; i++)
-  // {
-  //   Serial.print("SSID: ");
-  //   Serial.println(WiFi.SSID(i));
-  //   Serial.print("BSSID: ");
-  //   Serial.println(WiFi.BSSIDstr(i));
-  //   Serial.print("Channel: ");
-  //   Serial.println(WiFi.channel(i));
-  //   Serial.print("RSSI: ");
-  //   Serial.println(WiFi.RSSI(i));
-  //
-  //   Serial.println("-------------------------------------");
-  //   delay(500);
-  // }
-  // Serial.println();
+  Serial.print("ch");
+  Serial.print(CHANNEL);
+  Serial.print(" | ");
+
+  uint32_t count12 = len12Count;
+  uint32_t count128 = len128Count;
+  uint32_t countOther = otherLenCount;
+  len12Count = 0;
+  len128Count = 0;
+  otherLenCount = 0;
+
+  Serial.print("12: ");
+  Serial.print(count12);
+  Serial.print(" | ");
+
+  Serial.print("128: ");
+  Serial.print(count128);
+  Serial.print(" | ");
+
+  Serial.print("other: ");
+  Serial.println(countOther);
+
   delay(1000);
 }
