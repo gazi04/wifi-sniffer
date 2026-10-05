@@ -4,21 +4,33 @@ extern "C" {
   #include "user_interface.h"
 }
 
-volatile uint32_t len12Count = 0;
-volatile uint32_t len128Count = 0;
-volatile uint32_t otherLenCount = 0;
+volatile uint32_t mgmtCount = 0;
+volatile uint32_t ctrlCount = 0;
+volatile uint32_t dataCount = 0;
+volatile uint32_t unknownCount = 0;
 
-const uint8_t CHANNEL = 1;
+const uint8_t CHANNEL = 11;
 
 void packetSnifferCallback(uint8_t *buf, uint16_t len) {
   if (len == 12) {
-    len12Count++;
+    return;
   }
-  else if (len == 128) {
-    len128Count++;
+
+  uint8_t frameControlByte0 = buf[12];
+  uint8_t type = (frameControlByte0 >> 2) & 0x03;
+  uint8_t subtype = (frameControlByte0 >> 4) & 0x0F;
+
+  if (type == 0) {
+    mgmtCount++;
+  }
+  else if (type == 1) {
+    ctrlCount++;
+  }
+  else if (type == 2) {
+    dataCount++;
   }
   else {
-    otherLenCount++;
+    unknownCount++;
   }
 }
 
@@ -37,27 +49,34 @@ void setup() {
 }
 
 void loop() {
-  Serial.print("ch");
+  Serial.print("ch ");
   Serial.print(CHANNEL);
   Serial.print(" | ");
 
-  uint32_t count12 = len12Count;
-  uint32_t count128 = len128Count;
-  uint32_t countOther = otherLenCount;
-  len12Count = 0;
-  len128Count = 0;
-  otherLenCount = 0;
+  uint32_t mgmt = mgmtCount;
+  uint32_t ctrl = ctrlCount;
+  uint32_t data = dataCount;
+  uint32_t unknown = unknownCount;
+  mgmtCount = 0;
+  ctrlCount = 0;
+  dataCount = 0;
+  unknownCount = 0;
 
-  Serial.print("12: ");
-  Serial.print(count12);
+  Serial.print("Management: ");
+  Serial.print(mgmt);
   Serial.print(" | ");
 
-  Serial.print("128: ");
-  Serial.print(count128);
+  Serial.print("Control: ");
+  Serial.print(ctrl);
   Serial.print(" | ");
 
-  Serial.print("other: ");
-  Serial.println(countOther);
+  Serial.print("Data: ");
+  Serial.print(data);
+  Serial.print(" | ");
+
+  Serial.print("Unknown: ");
+  Serial.print(unknown);
+  Serial.println();
 
   delay(1000);
 }
