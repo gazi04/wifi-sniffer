@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "arduino-development",
+  "owner": "lookfwd",
+  "repo": "arduino-cli-claude-plugin",
+  "path": "skills/arduino-development",
+  "branch": "main",
+  "sha": "63ca6542081c2b5244824b4fc6b05164dad3b7c6",
+  "source": "manual"
+}
