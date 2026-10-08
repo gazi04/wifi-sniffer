@@ -10,12 +10,20 @@ volatile uint32_t dataCount = 0;
 volatile uint32_t unknownCount = 0;
 
 volatile uint32_t mgmtSubCount[16] = {0};
+volatile uint32_t controlSubCount[16] = {0};
 
 const uint8_t CHANNEL = 11;
 
 const uint8_t SUBTYPE_MGMT_BEACON = 8;
 const uint8_t SUBTYPE_MGMT_PROBE_REQUEST = 4;
 const uint8_t SUBTYPE_MGMT_PROBE_RESPONSE = 5;
+
+const uint8_t SUBTYPE_CTRL_BLOCK_ACK_REQUEST = 8;
+const uint8_t SUBTYPE_CTRL_BLOCK_ACK = 9;
+const uint8_t SUBTYPE_CTRL_PS_POLL = 10; 
+const uint8_t SUBTYPE_CTRL_RTS = 11;
+const uint8_t SUBTYPE_CTRL_CTS = 12;
+const uint8_t SUBTYPE_CTRL_ACK = 13;
 
 void packetSnifferCallback(uint8_t *buf, uint16_t len) {
   if (len == 12) {
@@ -32,6 +40,7 @@ void packetSnifferCallback(uint8_t *buf, uint16_t len) {
   }
   else if (type == 1) {
     ctrlCount++;
+    controlSubCount[subtype]++;
   }
   else if (type == 2) {
     dataCount++;
@@ -79,6 +88,23 @@ void loop() {
     otherMgmtCount += slotCount;
   }
   
+  uint32_t blockAckRequestCount = controlSubCount[SUBTYPE_CTRL_BLOCK_ACK_REQUEST];
+  uint32_t blockAckCount = controlSubCount[SUBTYPE_CTRL_BLOCK_ACK];
+  uint32_t psPollCount = controlSubCount[SUBTYPE_CTRL_PS_POLL];
+  uint32_t rtsCount = controlSubCount[SUBTYPE_CTRL_RTS];
+  uint32_t ctsCount = controlSubCount[SUBTYPE_CTRL_CTS];
+  uint32_t ackCount = controlSubCount[SUBTYPE_CTRL_ACK];
+  uint32_t otherControlCount = 0;
+  uint8_t controlSubLength = sizeof(controlSubCount) / sizeof(controlSubCount[0]);
+
+  for (int i = 0; i < controlSubLength; i++) {
+    uint32_t slotCount = controlSubCount[i];
+    controlSubCount[i] = 0;
+    if (i == SUBTYPE_CTRL_BLOCK_ACK_REQUEST || i == SUBTYPE_CTRL_BLOCK_ACK || i == SUBTYPE_CTRL_PS_POLL || i == SUBTYPE_CTRL_RTS || i == SUBTYPE_CTRL_CTS || i == SUBTYPE_CTRL_ACK) {
+      continue;
+    }
+    otherControlCount += slotCount;
+  }
 
   mgmtCount = 0;
   ctrlCount = 0;
@@ -108,7 +134,36 @@ void loop() {
 
   Serial.print("Control: ");
   Serial.print(ctrl);
-  Serial.print(" | ");
+  Serial.print(" (");
+
+  Serial.print("bar ");
+  Serial.print(blockAckRequestCount);
+  Serial.print(", ");
+
+  Serial.print("ba ");
+  Serial.print(blockAckCount);
+  Serial.print(", ");
+
+  Serial.print("ps-poll ");
+  Serial.print(psPollCount);
+  Serial.print(", ");
+
+  Serial.print("rts ");
+  Serial.print(rtsCount);
+  Serial.print(", ");
+
+  Serial.print("cts ");
+  Serial.print(ctsCount);
+  Serial.print(", ");
+
+  Serial.print("ack ");
+  Serial.print(ackCount);
+  Serial.print(", ");
+
+  Serial.print("other ");
+  Serial.print(otherControlCount);
+  Serial.print(")");
+  Serial.println();
 
   Serial.print("Data: ");
   Serial.print(data);
