@@ -12,6 +12,8 @@ volatile uint32_t unknownCount = 0;
 volatile uint32_t mgmtSubCount[16] = {0};
 volatile uint32_t controlSubCount[16] = {0};
 
+uint8_t lastBeaconBssid[6];
+
 const uint8_t CHANNEL = 11;
 
 const uint8_t SUBTYPE_MGMT_BEACON = 8;
@@ -34,9 +36,14 @@ void packetSnifferCallback(uint8_t *buf, uint16_t len) {
   uint8_t type = (frameControlByte0 >> 2) & 0x03;
   uint8_t subtype = (frameControlByte0 >> 4) & 0x0F;
 
+
   if (type == 0) {
     mgmtCount++;
     mgmtSubCount[subtype]++;
+
+    if (subtype == SUBTYPE_MGMT_BEACON) {
+      memcpy(lastBeaconBssid, &buf[28], sizeof(lastBeaconBssid));
+    }
   }
   else if (type == 1) {
     ctrlCount++;
@@ -87,7 +94,7 @@ void loop() {
     }
     otherMgmtCount += slotCount;
   }
-  
+
   uint32_t blockAckRequestCount = controlSubCount[SUBTYPE_CTRL_BLOCK_ACK_REQUEST];
   uint32_t blockAckCount = controlSubCount[SUBTYPE_CTRL_BLOCK_ACK];
   uint32_t psPollCount = controlSubCount[SUBTYPE_CTRL_PS_POLL];
@@ -171,6 +178,21 @@ void loop() {
 
   Serial.print("Unknown: ");
   Serial.print(unknown);
+  Serial.println();
+
+  Serial.print("Last beacon from: ");
+  uint8_t lastBeaconBssidCopied[6];
+  memcpy(lastBeaconBssidCopied, lastBeaconBssid, sizeof(lastBeaconBssid));
+
+  uint8_t beaconLength = sizeof(lastBeaconBssidCopied) / sizeof(lastBeaconBssidCopied[0]);
+
+  for (int i = 0; i < beaconLength; i++) {
+    Serial.printf("%02x", lastBeaconBssidCopied[i]);
+    if (i != beaconLength - 1) {
+      Serial.print(":");
+    }
+    lastBeaconBssid[i] = 0;
+  }
 
   Serial.println();
   Serial.println("----------------------------------");
