@@ -8,12 +8,14 @@ volatile uint32_t mgmtCount = 0;
 volatile uint32_t ctrlCount = 0;
 volatile uint32_t dataCount = 0;
 volatile uint32_t unknownCount = 0;
+
 volatile uint32_t mgmtSubCount[16] = {0};
 
-const uint8_t CHANNEL = 6;
-const uint8_t SUBTYPE_BEACON = 8;
-const uint8_t SUBTYPE_PROBE_REQUEST = 4;
-const uint8_t SUBTYPE_PROBE_RESPONSE = 5;
+const uint8_t CHANNEL = 11;
+
+const uint8_t SUBTYPE_MGMT_BEACON = 8;
+const uint8_t SUBTYPE_MGMT_PROBE_REQUEST = 4;
+const uint8_t SUBTYPE_MGMT_PROBE_RESPONSE = 5;
 
 void packetSnifferCallback(uint8_t *buf, uint16_t len) {
   if (len == 12) {
@@ -54,29 +56,29 @@ void setup() {
 }
 
 void loop() {
-  Serial.print("ch ");
-  Serial.print(CHANNEL);
-  Serial.print(" | ");
+  Serial.print("Channel: ");
+  Serial.println(CHANNEL);
 
   uint32_t mgmt = mgmtCount;
   uint32_t ctrl = ctrlCount;
   uint32_t data = dataCount;
   uint32_t unknown = unknownCount;
-  uint32_t beaconCount = mgmtSubCount[SUBTYPE_BEACON];
-  uint32_t probeRequestCount = mgmtSubCount[SUBTYPE_PROBE_REQUEST];
-  uint32_t probeResponseCount = mgmtSubCount[SUBTYPE_PROBE_RESPONSE];
-  uint32_t other = 0;
 
+  uint32_t beaconCount = mgmtSubCount[SUBTYPE_MGMT_BEACON];
+  uint32_t probeRequestCount = mgmtSubCount[SUBTYPE_MGMT_PROBE_REQUEST];
+  uint32_t probeResponseCount = mgmtSubCount[SUBTYPE_MGMT_PROBE_RESPONSE];
+  uint32_t otherMgmtCount = 0;
   uint8_t mgmtSubLength = sizeof(mgmtSubCount) / sizeof(mgmtSubCount[0]);
 
   for (int i = 0; i < mgmtSubLength; i++) {
     uint32_t slotCount = mgmtSubCount[i];
     mgmtSubCount[i] = 0;
-    if (i == SUBTYPE_BEACON || i == SUBTYPE_PROBE_REQUEST || i == SUBTYPE_PROBE_RESPONSE) {
+    if (i == SUBTYPE_MGMT_BEACON || i == SUBTYPE_MGMT_PROBE_REQUEST || i == SUBTYPE_MGMT_PROBE_RESPONSE) {
       continue;
     }
-    other += slotCount;
+    otherMgmtCount += slotCount;
   }
+  
 
   mgmtCount = 0;
   ctrlCount = 0;
@@ -100,10 +102,9 @@ void loop() {
   Serial.print(", ");
 
   Serial.print("other ");
-  Serial.print(other);
-
+  Serial.print(otherMgmtCount);
   Serial.print(")");
-  Serial.print(" | ");
+  Serial.println();
 
   Serial.print("Control: ");
   Serial.print(ctrl);
@@ -111,11 +112,13 @@ void loop() {
 
   Serial.print("Data: ");
   Serial.print(data);
-  Serial.print(" | ");
+  Serial.println();
 
   Serial.print("Unknown: ");
   Serial.print(unknown);
+
   Serial.println();
+  Serial.println("----------------------------------");
 
   delay(1000);
 }
